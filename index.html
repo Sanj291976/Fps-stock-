@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🛒 Stock Calculator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0e0c">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Noto+Sans:wght@400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans',sans-serif;background:#0a0e0c;color:#c8d8c0;min-height:100vh;overflow-x:hidden;}
+@media print{.no-print{display:none!important;}body{background:white;color:black;}}
+
+/* EPOS BAR */
+.epos-bar{background:#1a3a00;padding:7px 14px;text-align:center;border-bottom:1px solid #2a5a00;}
+.epos-bar a{color:#aaff55;font-size:12px;font-weight:700;text-decoration:none;letter-spacing:0.3px;}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0d1f0a,#1a3a10);padding:9px 14px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;border-bottom:2px solid #2a5a15;}
+.hdr-left h1{font-family:'Baloo 2',sans-serif;font-size:17px;font-weight:800;color:#7ddd44;}
+.hdr-left p{font-size:10px;color:#556644;}
+.hdr-btns{display:flex;gap:6px;}
+.hbtn{background:rgba(125,221,68,0.15);border:1px solid rgba(125,221,68,0.3);color:#7ddd44;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.hbtn:active{opacity:0.7;}
+
+/* TABS */
+.tabs{display:flex;background:#0d150a;border-bottom:2px solid #1a2e10;position:sticky;top:48px;z-index:190;}
+.tab{flex:1;padding:9px 4px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;color:#445533;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all 0.2s;}
+.tab.active{color:#7ddd44;border-bottom-color:#7ddd44;background:#0a1208;}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* TALLY PAGE */
+/* Month selector */
+.month-sel{background:#0d150a;padding:10px 12px;border-bottom:1px solid #1a2e10;}
+.month-sel .sec-lbl{font-size:9px;color:#445533;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;font-weight:700;}
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px;}
+.mbtn{background:#0f1a0c;border:1px solid #1a2e10;border-radius:5px;color:#667755;font-size:10px;font-weight:600;padding:5px 3px;cursor:pointer;font-family:inherit;text-align:center;}
+.mbtn.sel{background:#1a3a10;border-color:#4a8a25;color:#7ddd44;}
+.year-row{display:flex;gap:4px;}
+.ybtn{background:#0f1a0c;border:1px solid #1a2e10;border-radius:5px;color:#667755;font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer;font-family:inherit;}
+.ybtn.sel{background:#1a3a10;border-color:#4a8a25;color:#7ddd44;}
+
+/* RATE BAR */
+.rate-bar{display:flex;gap:8px;padding:8px 12px;background:#0a1208;border-bottom:1px solid #1a2e10;}
+.rate-item{flex:1;background:#0d150a;border-radius:6px;padding:5px 6px;text-align:center;border:1px solid #1a2e10;}
+.rate-lbl{font-size:8px;color:#445533;text-transform:uppercase;font-weight:700;}
+.rate-val{font-size:11px;font-weight:700;color:#7ddd44;}
+
+/* MINI SUMMARY */
+.mini-sum{display:grid;grid-template-columns:repeat(4,1fr);background:#0d150a;border-bottom:2px solid #1a2e10;}
+.ms-box{padding:6px 4px;text-align:center;border-right:1px solid #1a2e10;}
+.ms-box:last-child{border-right:none;}
+.ms-lbl{font-size:8px;color:#445533;text-transform:uppercase;font-weight:700;margin-bottom:2px;}
+.ms-val{font-size:12px;font-weight:700;color:#7ddd44;}
+
+/* NUMPAD */
+.numpad-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;align-items:flex-end;justify-content:center;}
+.numpad-overlay.show{display:flex;}
+.numpad-box{background:#0d1f0a;border-radius:16px 16px 0 0;width:100%;max-width:480px;border-top:2px solid #2a5a15;padding-bottom:env(safe-area-inset-bottom,10px);}
+.np-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 16px 6px;}
+.np-name{font-size:13px;font-weight:700;color:#7ddd44;}
+.np-display{font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:800;color:white;}
+.np-field{font-size:10px;color:#556644;margin-top:1px;}
+.np-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 2px 2px;}
+.npbtn{background:#111f0e;padding:14px;font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:700;color:#c8d8c0;border:none;cursor:pointer;text-align:center;border-radius:4px;}
+.npbtn:active{background:#1a3a10;}
+.npbtn.del{color:#ff6b6b;font-size:18px;}
+.npbtn.ok{background:#2a6a15;color:white;font-size:13px;font-weight:800;grid-column:span 3;padding:13px;border-radius:6px;margin:2px;}
+.npbtn.clr{background:#1a1a0a;color:#ffaa44;font-size:13px;font-weight:700;}
+
+/* TALLY TABLE */
+.group-section{margin:0;}
+.group-hdr{background:#111f0e;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1a2e10;border-top:2px solid #2a5a15;cursor:pointer;}
+.group-hdr-left{display:flex;align-items:center;gap:8px;}
+.group-name{font-family:'Baloo 2',sans-serif;font-size:14px;font-weight:800;color:#7ddd44;}
+.group-count{font-size:10px;color:#445533;}
+.group-hdr-right{display:flex;align-items:center;gap:6px;}
+.share-btn{background:rgba(37,211,102,0.2);border:1px solid rgba(37,211,102,0.4);color:#25d366;border-radius:6px;padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;}
+.share-btn:active{opacity:0.7;}
+.toggle-icon{font-size:12px;color:#445533;}
+.group-body{overflow:hidden;transition:max-height 0.3s;}
+.group-totals{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:#0d1808;padding:5px 8px;border-bottom:1px solid #1a2e10;font-size:10px;}
+.gt-item{text-align:center;}
+.gt-lbl{font-size:8px;color:#445533;text-transform:uppercase;}
+.gt-val{font-weight:700;color:#7ddd44;}
+
+table{width:100%;border-collapse:collapse;}
+thead{position:relative;}
+thead tr{background:#0d1808;border-bottom:1px solid #2a5a15;}
+th{padding:6px 4px;font-size:9px;font-weight:700;color:#5a8a35;text-transform:uppercase;text-align:center;}
+th.name-col{text-align:left;padding-left:8px;}
+tbody tr{border-bottom:1px solid #0f1a0c;}
+tbody tr:nth-child(even){background:rgba(125,221,68,0.02);}
+td{padding:5px 4px;text-align:center;font-size:12px;}
+td.name-td{text-align:left;padding-left:8px;font-size:11px;color:#9ab88a;max-width:90px;}
+td.val-td{font-weight:700;color:#c8d8c0;cursor:pointer;padding:12px 6px;min-width:44px;font-size:13px;}
+td.val-td:active{background:rgba(125,221,68,0.1);}
+td.amt-td{font-size:11px;color:#7ddd44;font-weight:700;}
+.wa-btn{background:none;border:none;font-size:14px;cursor:pointer;padding:2px 4px;}
+.wa-btn:active{opacity:0.6;}
+
+/* SUMMARY PAGE */
+.sum-page{padding:10px;}
+.sum-card{background:#0d150a;border-radius:10px;overflow:hidden;margin-bottom:10px;border:1px solid #1a2e10;}
+.sum-card-hdr{padding:8px 14px;background:#111f0e;border-bottom:1px solid #1a2e10;}
+.sum-card-hdr h3{font-family:'Baloo 2',sans-serif;font-size:14px;font-weight:800;color:#7ddd44;}
+.sum-row{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #0f1a0c;}
+.sum-row:last-child{border-bottom:none;}
+.sum-lbl{font-size:12px;color:#667755;}
+.sum-val{font-size:13px;font-weight:700;color:#c8d8c0;}
+.grand-card{background:linear-gradient(135deg,#0d2a08,#1a5a10);border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;border:1px solid #2a6a15;}
+.grand-lbl{font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.grand-val{font-family:'Baloo 2',sans-serif;font-size:30px;font-weight:800;color:#7ddd44;}
+
+/* HISTORY PAGE */
+.hist-page{padding:10px;}
+.no-hist{text-align:center;padding:30px;color:#334422;font-size:13px;}
+.hist-item{background:#0d150a;border-radius:8px;padding:10px 14px;margin-bottom:8px;border:1px solid #1a2e10;cursor:pointer;}
+.hist-item:active{background:#111f0e;}
+.hist-month{font-family:'Baloo 2',sans-serif;font-size:14px;font-weight:700;color:#7ddd44;}
+.hist-detail{font-size:11px;color:#445533;margin-top:2px;}
+.hist-amt{font-size:16px;font-weight:700;color:#7ddd44;text-align:right;}
+.hist-actions{display:flex;gap:6px;margin-top:8px;}
+.hact-btn{flex:1;padding:6px;border:1px solid #1a2e10;border-radius:6px;background:#0f1a0c;color:#667755;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-align:center;}
+.hact-btn.del{color:#ff6666;border-color:#3a1010;}
+.hact-btn:active{opacity:0.7;}
+</style>
+</head>
+<body>
+
+<div class="epos-bar no-print">
+  <a href="https://epos.assam.gov.in/FPS_Status" target="_blank">🌐 ePOS Assam — FPS Status &nbsp;↗</a>
+</div>
+
+<div class="hdr no-print">
+  <div class="hdr-left">
+    <h1>🛒 Stock Calculator</h1>
+    <p>Dal · Salt · Sugar — FPS Distribution</p>
+  </div>
+  <div class="hdr-btns">
+    <button class="hbtn" onclick="window.print()">🖨</button>
+    <button class="hbtn" onclick="saveMonth()">💾 Save</button>
+  </div>
+</div>
+
+<div class="tabs no-print">
+  <div class="tab active" id="tab-tally" onclick="swTab('tally')">📋 Tally</div>
+  <div class="tab" id="tab-summary" onclick="swTab('summary')">📊 Summary</div>
+  <div class="tab" id="tab-history" onclick="swTab('history')">🗂 History</div>
+</div>
+
+<!-- TALLY PAGE -->
+<div class="page active" id="page-tally">
+  <!-- Month selector -->
+  <div class="month-sel no-print">
+    <div class="sec-lbl">Select Month</div>
+    <div class="month-grid" id="month-grid"></div>
+    <div class="year-row" id="year-row"></div>
+  </div>
+
+  <!-- Rate bar -->
+  <div class="rate-bar no-print">
+    <div class="rate-item"><div class="rate-lbl">Dal</div><div class="rate-val">₹58/kg</div></div>
+    <div class="rate-item"><div class="rate-lbl">Salt</div><div class="rate-val">₹8/kg</div></div>
+    <div class="rate-item"><div class="rate-lbl">Sugar</div><div class="rate-val">₹28/kg</div></div>
+  </div>
+
+  <!-- Mini summary -->
+  <div class="mini-sum no-print">
+    <div class="ms-box"><div class="ms-lbl">Entries</div><div class="ms-val" id="ms-entries">0</div></div>
+    <div class="ms-box"><div class="ms-lbl">Dal kg</div><div class="ms-val" id="ms-dal">0.00</div></div>
+    <div class="ms-box"><div class="ms-lbl">Salt kg</div><div class="ms-val" id="ms-salt">0.00</div></div>
+    <div class="ms-box"><div class="ms-lbl">Total ₹</div><div class="ms-val" id="ms-total">0.00</div></div>
+  </div>
+
+  <!-- Groups -->
+  <div id="groups-container"></div>
+</div>
+
+<!-- SUMMARY PAGE -->
+<div class="page" id="page-summary">
+  <div class="sum-page" id="sum-content"></div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div class="page" id="page-history">
+  <div class="hist-page" id="hist-content"></div>
+</div>
+
+<!-- NUMPAD -->
+<div class="numpad-overlay" id="numpad-overlay" onclick="npBgClose(event)">
+  <div class="numpad-box">
+    <div class="np-hdr">
+      <div>
+        <div class="np-name" id="np-name">Name</div>
+        <div class="np-field" id="np-field">Dal (kg)</div>
+      </div>
+      <div class="np-display" id="np-display">0</div>
+    </div>
+    <div class="np-grid">
+      <button class="npbtn" onclick="npPress('1')">1</button>
+      <button class="npbtn" onclick="npPress('2')">2</button>
+      <button class="npbtn" onclick="npPress('3')">3</button>
+      <button class="npbtn" onclick="npPress('4')">4</button>
+      <button class="npbtn" onclick="npPress('5')">5</button>
+      <button class="npbtn" onclick="npPress('6')">6</button>
+      <button class="npbtn" onclick="npPress('7')">7</button>
+      <button class="npbtn" onclick="npPress('8')">8</button>
+      <button class="npbtn" onclick="npPress('9')">9</button>
+      <button class="npbtn clr" onclick="npClear()">CLR</button>
+      <button class="npbtn" onclick="npPress('0')">0</button>
+      <button class="npbtn del" onclick="npDel()">⌫</button>
+      <button class="npbtn ok" onclick="npOk()">✅ OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───
+var RATES={dal:58,salt:8,sugar:28};
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var YEARS=[2024,2025,2026,2027];
+var SK='stock_v4';
+var HIST_SK='stock_hist_v4';
+
+// ─── STATE ───
+var selMonth=new Date().getMonth();
+var selYear=new Date().getFullYear();
+var npTarget=null; // {gi, ri, field}
+var npVal='0';
+
+// ─── MEMBER DATA ───
+var GROUPS=[
+  {
+    name:'ROHMARIA',
+    members:[
+      {name:'Jadab Dutta',dal:133,salt:133,sugar:133},
+      {name:'Suchil Saikia',dal:222,salt:223,sugar:223},
+      {name:'Durlov Gogoi',dal:171,salt:171,sugar:171},
+      {name:'Lambeswar Chatradhar',dal:175,salt:176,sugar:175},
+      {name:'Juran Das',dal:172,salt:171,sugar:173},
+      {name:'Ranjan Dutta',dal:195,salt:195,sugar:196},
+      {name:'Apurba Kr Das',dal:142,salt:142,sugar:142},
+      {name:'Aneswar Das',dal:132,salt:133,sugar:132},
+      {name:'Mira Kurmi',dal:106,salt:106,sugar:106},
+      {name:'Amio Gohain',dal:140,salt:140,sugar:140},
+      {name:'Prabin Saikia',dal:120,salt:120,sugar:120},
+      {name:'Kanaklata Saikia',dal:156,salt:155,sugar:157},
+      {name:'Gohen Gogoi',dal:201,salt:201,sugar:201},
+      {name:'Punaram Konch',dal:163,salt:162,sugar:163},
+      {name:'Numal Dangoria',dal:176,salt:176,sugar:176},
+      {name:'Prabitra Gohain',dal:190,salt:190,sugar:190},
+      {name:'Kameswar Chetia',dal:169,salt:156,sugar:169},
+      {name:'Binu Boruah',dal:149,salt:139,sugar:149},
+      {name:'Dipen Gogoi',dal:219,salt:218,sugar:230},
+      {name:'Rezina Murah',dal:174,salt:175,sugar:175},
+      {name:'M/s Paramananda Entp',dal:270,salt:269,sugar:270},
+      {name:'Sobha Keshri',dal:286,salt:285,sugar:289},
+      {name:'Subal Kairi',dal:165,salt:165,sugar:166},
+      {name:'Utpal Gogoi',dal:171,salt:170,sugar:171},
+      {name:'Ghana Kt Dutta',dal:155,salt:155,sugar:155},
+      {name:'Atmaram Agarwala',dal:380,salt:380,sugar:380},
+      {name:'J P Dhamuka',dal:165,salt:164,sugar:164},
+      {name:'Rejina Begum',dal:176,salt:172,sugar:172},
+      {name:'Deepjyoti Das',dal:231,salt:231,sugar:231},
+      {name:'Sumadhar Dutta',dal:55,salt:55,sugar:55}
+    ]
+  },
+  {
+    name:'BOKUL',
+    members:[
+      {name:'Swargajyoti Patra',dal:209,salt:210,sugar:210},
+      {name:'Debo Kt Neog',dal:217,salt:217,sugar:217},
+      {name:'Biswajit Mech',dal:140,salt:139,sugar:140},
+      {name:'Joy Prakash Shah',dal:114,salt:114,sugar:114},
+      {name:'Gubin Mech',dal:110,salt:110,sugar:110},
+      {name:'Gunadhar Gogoi',dal:50,salt:36,sugar:46},
+      {name:'Dipak Gurung',dal:116,salt:116,sugar:116},
+      {name:'Janaklal Patwari',dal:131,salt:131,sugar:132},
+      {name:'Achala Keshri',dal:62,salt:61,sugar:61},
+      {name:'Karuna Bhaju',dal:479,salt:479,sugar:479},
+      {name:'Noor Hussain',dal:119,salt:119,sugar:119},
+      {name:'Tanbi Ahmed',dal:271,salt:270,sugar:271},
+      {name:'Numal Gogoi',dal:160,salt:160,sugar:160},
+      {name:'Tahir Ahmed',dal:169,salt:169,sugar:169},
+      {name:'Hira Hazarika',dal:137,salt:137,sugar:137},
+      {name:'Tijen Chetia',dal:81,salt:81,sugar:81},
+      {name:'Paban Munda',dal:126,salt:126,sugar:129},
+      {name:'Jayanta Hazarika',dal:262,salt:262,sugar:262},
+      {name:'Nabi Hussain',dal:108,salt:109,sugar:112},
+      {name:'Salimullah Shaikh',dal:123,salt:114,sugar:115},
+      {name:'Abdul Kadir',dal:78,salt:79,sugar:79},
+      {name:'Lena Chetia',dal:155,salt:154,sugar:155},
+      {name:'Bhadra Kt Gohain',dal:63,salt:63,sugar:63},
+      {name:'Sakhina Begum',dal:141,salt:141,sugar:141},
+      {name:'Dinesh Das',dal:98,salt:90,sugar:99},
+      {name:'Manjumoni Phukon',dal:119,salt:117,sugar:119},
+      {name:'Jitu Kr Das',dal:163,salt:156,sugar:165},
+      {name:'Ajanta Hazarika',dal:116,salt:116,sugar:116},
+      {name:'Monuj Gogoi',dal:212,salt:213,sugar:213},
+      {name:'B C Jain',dal:68,salt:68,sugar:69}
+    ]
+  },
+  {
+    name:'DWCCS',
+    members:[
+      {name:'Samir Kr Dey',dal:350,salt:348,sugar:350},
+      {name:'Utpal Sengupta',dal:362,salt:362,sugar:362},
+      {name:'M/S Ree Enterprise',dal:148,salt:148,sugar:148},
+      {name:'Noor Rahim',dal:136,salt:122,sugar:135},
+      {name:'Moloy Kanti Chakraborty',dal:164,salt:164,sugar:164},
+      {name:'Sri Mukunda Das',dal:340,salt:340,sugar:340},
+      {name:'Krishna Dey',dal:441,salt:441,sugar:441},
+      {name:'M/S Laxmi Enterprise',dal:223,salt:223,sugar:223},
+      {name:'Railway Consumer Co-op',dal:267,salt:262,sugar:267},
+      {name:'Krishna & Bishnu Debnath',dal:261,salt:261,sugar:261},
+      {name:'Prakash Sharma',dal:502,salt:492,sugar:509}
+    ]
+  }
+];
+
+// ─── STORAGE ───
+var allData={};
+function fm(n){return parseFloat(n||0).toFixed(2);}
+function storeKey(){return SK+'_'+selYear+'_'+selMonth;}
+
+function loadData(){
+  try{
+    var d=localStorage.getItem(storeKey());
+    if(d){
+      allData=JSON.parse(d);
+    } else {
+      // Init from default member data
+      allData={};
+      GROUPS.forEach(function(g,gi){
+        allData[gi]=[];
+        g.members.forEach(function(m){
+          allData[gi].push({dal:m.dal,salt:m.salt,sugar:m.sugar});
+        });
+      });
+    }
+  }catch(e){
+    allData={};
+    GROUPS.forEach(function(g,gi){
+      allData[gi]=[];
+      g.members.forEach(function(m){allData[gi].push({dal:m.dal,salt:m.salt,sugar:m.sugar});});
+    });
+  }
+}
+
+function saveData(){
+  try{localStorage.setItem(storeKey(),JSON.stringify(allData));}catch(e){}
+}
+
+function getVal(gi,ri,f){return(allData[gi]&&allData[gi][ri])?allData[gi][ri][f]:0;}
+function setVal(gi,ri,f,v){if(!allData[gi])allData[gi]=[];if(!allData[gi][ri])allData[gi][ri]={dal:0,salt:0,sugar:0};allData[gi][ri][f]=v;}
+
+// ─── AMOUNT CALC ───
+function rowAmt(gi,ri){
+  var d=getVal(gi,ri,'dal'),s=getVal(gi,ri,'salt'),sg=getVal(gi,ri,'sugar');
+  return d*RATES.dal+s*RATES.salt+sg*RATES.sugar;
+}
+
+// ─── MONTH/YEAR SELECTOR ───
+function buildMonthSel(){
+  var mg=document.getElementById('month-grid');
+  mg.innerHTML='';
+  MONTHS.forEach(function(m,i){
+    var b=document.createElement('button');
+    b.className='mbtn'+(i===selMonth?' sel':'');
+    b.textContent=m.slice(0,3);
+    b.onclick=(function(idx){return function(){selMonth=idx;buildMonthSel();buildYearSel();loadData();renderAll();};})(i);
+    mg.appendChild(b);
+  });
+  var yr=document.getElementById('year-row');
+  yr.innerHTML='';
+  YEARS.forEach(function(y){
+    var b=document.createElement('button');
+    b.className='ybtn'+(y===selYear?' sel':'');
+    b.textContent=y;
+    b.onclick=(function(yy){return function(){selYear=yy;buildMonthSel();buildYearSel();loadData();renderAll();};})(y);
+    yr.appendChild(b);
+  });
+}
+function buildYearSel(){
+  var yr=document.getElementById('year-row');
+  yr.innerHTML='';
+  YEARS.forEach(function(y){
+    var b=document.createElement('button');
+    b.className='ybtn'+(y===selYear?' sel':'');
+    b.textContent=y;
+    b.onclick=(function(yy){return function(){selYear=yy;buildMonthSel();loadData();renderAll();};})(y);
+    yr.appendChild(b);
+  });
+}
+
+// ─── RENDER GROUPS ───
+function renderAll(){
+  renderGroups();
+  updateMiniSum();
+}
+
+function renderGroups(){
+  var cont=document.getElementById('groups-container');
+  cont.innerHTML='';
+  GROUPS.forEach(function(g,gi){
+    var sec=document.createElement('div');
+    sec.className='group-section';
+    sec.id='gsec-'+gi;
+
+    // Group totals
+    var gDal=0,gSalt=0,gSugar=0,gAmt=0;
+    g.members.forEach(function(m,ri){
+      gDal+=getVal(gi,ri,'dal');
+      gSalt+=getVal(gi,ri,'salt');
+      gSugar+=getVal(gi,ri,'sugar');
+      gAmt+=rowAmt(gi,ri);
+    });
+
+    sec.innerHTML=
+      '<div class="group-hdr" ontouchstart="toggleGroup('+gi+')">'+
+        '<div class="group-hdr-left">'+
+          '<span class="group-name">🛒 '+g.name+'</span>'+
+          '<span class="group-count">'+g.members.length+' members</span>'+
+        '</div>'+
+        '<div class="group-hdr-right">'+
+          (gi===2?'<button class="share-btn" style="background:rgba(255,200,0,0.2);border-color:rgba(255,200,0,0.5);color:#ffcc00;" onclick="event.stopPropagation();loadDWCCS()">📥 Load</button>':'')+
+          '<button class="share-btn" onclick="event.stopPropagation();shareGroup('+gi+')">📤 Share</button>'+
+          '<span class="toggle-icon" id="tog-'+gi+'">▾</span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="group-body" id="gbody-'+gi+'">'+
+        '<div class="group-totals">'+
+          '<div class="gt-item"><div class="gt-lbl">Dal kg</div><div class="gt-val">'+fm(gDal)+'</div></div>'+
+          '<div class="gt-item"><div class="gt-lbl">Salt kg</div><div class="gt-val">'+fm(gSalt)+'</div></div>'+
+          '<div class="gt-item"><div class="gt-lbl">Sugar kg</div><div class="gt-val">'+fm(gSugar)+'</div></div>'+
+          '<div class="gt-item"><div class="gt-lbl">Total ₹</div><div class="gt-val">'+fm(gAmt)+'</div></div>'+
+        '</div>'+
+        buildTable(gi,g)+
+      '</div>';
+
+    cont.appendChild(sec);
+  });
+}
+
+function buildTable(gi,g){
+  var rows='';
+  g.members.forEach(function(m,ri){
+    var d=getVal(gi,ri,'dal'),s=getVal(gi,ri,'salt'),sg=getVal(gi,ri,'sugar');
+    var amt=rowAmt(gi,ri);
+    rows+='<tr>'+
+      '<td class="name-td">'+m.name+'</td>'+
+      '<td class="val-td" ontouchstart="openNP('+gi+','+ri+',\'dal\')">'+(d||'—')+'</td>'+
+      '<td class="val-td" ontouchstart="openNP('+gi+','+ri+',\'salt\')">'+(s||'—')+'</td>'+
+      '<td class="val-td" ontouchstart="openNP('+gi+','+ri+',\'sugar\')">'+(sg||'—')+'</td>'+
+      '<td class="amt-td">'+fm(amt)+'</td>'+
+      '<td><button class="wa-btn" ontouchstart="shareRow('+gi+','+ri+')">📤</button></td>'+
+    '</tr>';
+  });
+  return '<table>'+
+    '<thead><tr>'+
+      '<th class="name-col">Name</th>'+
+      '<th>Dal</th><th>Salt</th><th>Sugar</th><th>Amt ₹</th><th></th>'+
+    '</tr></thead>'+
+    '<tbody>'+rows+'</tbody>'+
+  '</table>';
+}
+
+function toggleGroup(gi){
+  var body=document.getElementById('gbody-'+gi);
+  var tog=document.getElementById('tog-'+gi);
+  if(body.style.display==='none'){body.style.display='';tog.textContent='▾';}
+  else{body.style.display='none';tog.textContent='▸';}
+}
+
+// ─── MINI SUMMARY ───
+function updateMiniSum(){
+  var entries=0,tDal=0,tSalt=0,tAmt=0;
+  GROUPS.forEach(function(g,gi){
+    g.members.forEach(function(m,ri){
+      var d=getVal(gi,ri,'dal'),s=getVal(gi,ri,'salt'),sg=getVal(gi,ri,'sugar');
+      if(d>0||s>0||sg>0)entries++;
+      tDal+=d;tSalt+=s;tAmt+=rowAmt(gi,ri);
+    });
+  });
+  document.getElementById('ms-entries').textContent=entries;
+  document.getElementById('ms-dal').textContent=fm(tDal);
+  document.getElementById('ms-salt').textContent=fm(tSalt);
+  document.getElementById('ms-total').textContent=fm(tAmt);
+}
+
+// ─── NUMPAD ───
+function openNP(gi,ri,field){
+  npTarget={gi:gi,ri:ri,field:field};
+  npVal=String(getVal(gi,ri,field)||'0');
+  var fLabels={dal:'Dal (kg)',salt:'Salt (kg)',sugar:'Sugar (kg)'};
+  document.getElementById('np-name').textContent=GROUPS[gi].members[ri].name;
+  document.getElementById('np-field').textContent=fLabels[field];
+  document.getElementById('np-display').textContent=npVal;
+  document.getElementById('numpad-overlay').classList.add('show');
+}
+
+function npPress(d){
+  if(npVal==='0')npVal=d;
+  else npVal+=d;
+  document.getElementById('np-display').textContent=npVal;
+}
+function npDel(){
+  npVal=npVal.length>1?npVal.slice(0,-1):'0';
+  document.getElementById('np-display').textContent=npVal;
+}
+function npClear(){npVal='0';document.getElementById('np-display').textContent='0';}
+function npOk(){
+  if(!npTarget)return;
+  var v=parseInt(npVal)||0;
+  setVal(npTarget.gi,npTarget.ri,npTarget.field,v);
+  saveData();
+  document.getElementById('numpad-overlay').classList.remove('show');
+  renderAll();
+}
+function npBgClose(e){if(e.target===document.getElementById('numpad-overlay'))document.getElementById('numpad-overlay').classList.remove('show');}
+
+// ─── SHARE ───
+function shareRow(gi,ri){
+  var m=GROUPS[gi].members[ri];
+  var d=getVal(gi,ri,'dal'),s=getVal(gi,ri,'salt'),sg=getVal(gi,ri,'sugar');
+  var amt=rowAmt(gi,ri);
+  var mn=MONTHS[selMonth]+' '+selYear;
+  var txt='🛒 *'+m.name+'* — '+mn+'\nDal: '+d+'kg | Salt: '+s+'kg | Sugar: '+sg+'kg\nTotal: ₹'+fm(amt);
+  if(navigator.share){navigator.share({text:txt});}
+  else{navigator.clipboard&&navigator.clipboard.writeText(txt);alert('Copied!');}
+}
+
+function shareGroup(gi){
+  var g=GROUPS[gi];
+  var mn=MONTHS[selMonth]+' '+selYear;
+  var txt='🛒 *'+g.name+'* — '+mn+'\n\n';
+  var gAmt=0;
+  g.members.forEach(function(m,ri){
+    var d=getVal(gi,ri,'dal'),s=getVal(gi,ri,'salt'),sg=getVal(gi,ri,'sugar');
+    var amt=rowAmt(gi,ri);
+    gAmt+=amt;
+    txt+=m.name+': Dal '+d+' Salt '+s+' Sugar '+sg+' = ₹'+fm(amt)+'\n';
+  });
+  txt+='\n*Group Total: ₹'+fm(gAmt)+'*';
+  if(navigator.share){navigator.share({text:txt});}
+  else{navigator.clipboard&&navigator.clipboard.writeText(txt);alert('Copied!');}
+}
+
+// ─── SAVE MONTH ───
+function saveMonth(){
+  var histKey=HIST_SK;
+  var hist=[];
+  try{var h=localStorage.getItem(histKey);hist=h?JSON.parse(h):[];}catch(e){}
+  var mn=MONTHS[selMonth]+' '+selYear;
+  // Remove existing same month
+  hist=hist.filter(function(x){return x.label!==mn;});
+  var tAmt=0;
+  GROUPS.forEach(function(g,gi){g.members.forEach(function(m,ri){tAmt+=rowAmt(gi,ri);});});
+  hist.unshift({label:mn,key:storeKey(),total:tAmt,saved:new Date().toLocaleDateString('en-IN')});
+  try{localStorage.setItem(histKey,JSON.stringify(hist));}catch(e){}
+  showToast('✅ '+mn+' saved!');
+  renderHistory();
+}
+
+// ─── SUMMARY PAGE ───
+function renderSummary(){
+  var cont=document.getElementById('sum-content');
+  var mn=MONTHS[selMonth]+' '+selYear;
+  var grandTotal=0;
+  var html='<div class="grand-card"><div class="grand-lbl">'+mn+' — Grand Total</div><div class="grand-val" id="grand-sum">...</div></div>';
+  GROUPS.forEach(function(g,gi){
+    var gDal=0,gSalt=0,gSugar=0,gAmt=0;
+    g.members.forEach(function(m,ri){
+      gDal+=getVal(gi,ri,'dal');gSalt+=getVal(gi,ri,'salt');gSugar+=getVal(gi,ri,'sugar');gAmt+=rowAmt(gi,ri);
+    });
+    grandTotal+=gAmt;
+    html+='<div class="sum-card">'+
+      '<div class="sum-card-hdr"><h3>🛒 '+g.name+'</h3></div>'+
+      '<div class="sum-row"><span class="sum-lbl">Members</span><span class="sum-val">'+g.members.length+'</span></div>'+
+      '<div class="sum-row"><span class="sum-lbl">Dal Total</span><span class="sum-val">'+fm(gDal)+' kg</span></div>'+
+      '<div class="sum-row"><span class="sum-lbl">Salt Total</span><span class="sum-val">'+fm(gSalt)+' kg</span></div>'+
+      '<div class="sum-row"><span class="sum-lbl">Sugar Total</span><span class="sum-val">'+fm(gSugar)+' kg</span></div>'+
+      '<div class="sum-row"><span class="sum-lbl">Group Total</span><span class="sum-val" style="color:#7ddd44;font-size:16px;">₹'+fm(gAmt)+'</span></div>'+
+    '</div>';
+  });
+  cont.innerHTML=html;
+  document.getElementById('grand-sum').textContent='₹'+fm(grandTotal);
+}
+
+// ─── HISTORY PAGE ───
+function renderHistory(){
+  var cont=document.getElementById('hist-content');
+  var histKey=HIST_SK;
+  var hist=[];
+  try{var h=localStorage.getItem(histKey);hist=h?JSON.parse(h):[];}catch(e){}
+  if(hist.length===0){cont.innerHTML='<div class="no-hist">No saved months yet.<br>Tap 💾 Save to save current month!</div>';return;}
+  var html='';
+  hist.forEach(function(item,idx){
+    html+='<div class="hist-item">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<div><div class="hist-month">'+item.label+'</div><div class="hist-detail">Saved: '+item.saved+'</div></div>'+
+        '<div class="hist-amt">₹'+fm(item.total)+'</div>'+
+      '</div>'+
+      '<div class="hist-actions">'+
+        '<button class="hact-btn" onclick="loadHistMonth(\''+item.key+'\',\''+item.label+'\')">📂 Load</button>'+
+        '<button class="hact-btn del" onclick="delHist('+idx+')">🗑 Delete</button>'+
+      '</div>'+
+    '</div>';
+  });
+  cont.innerHTML=html;
+}
+
+function loadHistMonth(key,label){
+  // Just switch to that month
+  var parts=label.split(' ');
+  selMonth=MONTHS.indexOf(parts[0]);
+  selYear=parseInt(parts[1]);
+  buildMonthSel();
+  loadData();renderAll();
+  swTab('tally');
+  showToast('📂 Loaded '+label);
+}
+
+function delHist(idx){
+  if(!confirm('Delete this history?'))return;
+  var histKey=HIST_SK;
+  var hist=[];
+  try{var h=localStorage.getItem(histKey);hist=h?JSON.parse(h):[];}catch(e){}
+  hist.splice(idx,1);
+  try{localStorage.setItem(histKey,JSON.stringify(hist));}catch(e){}
+  renderHistory();
+}
+
+// ─── TABS ───
+function swTab(t){
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('page-'+t).classList.add('active');
+  if(t==='summary')renderSummary();
+  if(t==='history')renderHistory();
+}
+
+// ─── TOAST ───
+function showToast(msg){
+  var t=document.getElementById('toast-el');
+  if(!t){t=document.createElement('div');t.id='toast-el';t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a6a10;color:white;padding:9px 22px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;display:none;';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  setTimeout(function(){t.style.display='none';},2000);
+}
+
+
+// ─── LOAD DWCCS DATA ───
+function loadDWCCS(){
+  if(!confirm('Load March 2026 DWCCS data?\nThis will overwrite current DWCCS values!'))return;
+  var dwccs=[
+    {dal:350,salt:348,sugar:350},
+    {dal:362,salt:362,sugar:362},
+    {dal:148,salt:148,sugar:148},
+    {dal:136,salt:122,sugar:135},
+    {dal:164,salt:164,sugar:164},
+    {dal:340,salt:340,sugar:340},
+    {dal:441,salt:441,sugar:441},
+    {dal:223,salt:223,sugar:223},
+    {dal:267,salt:262,sugar:267},
+    {dal:261,salt:261,sugar:261},
+    {dal:502,salt:492,sugar:509}
+  ];
+  var gi=2;
+  if(!allData[gi])allData[gi]=[];
+  dwccs.forEach(function(d,ri){
+    if(!allData[gi][ri])allData[gi][ri]={dal:0,salt:0,sugar:0};
+    allData[gi][ri].dal=d.dal;
+    allData[gi][ri].salt=d.salt;
+    allData[gi][ri].sugar=d.sugar;
+  });
+  saveData();
+  renderAll();
+  showToast('✅ DWCCS March 2026 loaded!');
+}
+
+// ─── INIT ───
+buildMonthSel();
+loadData();
+renderAll();
+</script>
+</body>
+</html>
