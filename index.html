@@ -151,6 +151,7 @@ td.amt-td{font-size:11px;color:#7ddd44;font-weight:700;}
   <div class="tab active" id="tab-tally" onclick="swTab('tally')">📋 Tally</div>
   <div class="tab" id="tab-summary" onclick="swTab('summary')">📊 Summary</div>
   <div class="tab" id="tab-history" onclick="swTab('history')">🗂 History</div>
+  <div class="tab" id="tab-commission" onclick="swTab('commission')">💰 Commission</div>
 </div>
 
 <!-- TALLY PAGE -->
@@ -189,6 +190,54 @@ td.amt-td{font-size:11px;color:#7ddd44;font-weight:700;}
 <!-- HISTORY PAGE -->
 <div class="page" id="page-history">
   <div class="hist-page" id="hist-content"></div>
+</div>
+
+<!-- COMMISSION PAGE -->
+<div class="page" id="page-commission">
+  <div style="padding:14px;">
+    <div style="background:#0d2a18;border-radius:10px;padding:12px;margin-bottom:12px;border:1px solid #2a5a15;">
+      <div style="font-size:11px;color:#556644;text-transform:uppercase;font-weight:700;margin-bottom:8px;">Rate</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="color:#c8d8c0;font-size:13px;">Rs.</span>
+        <input type="text" inputmode="decimal" id="comm-rate" value="180" style="background:#0a1208;border:1px solid #2a5a15;border-radius:7px;color:#7ddd44;font-size:18px;font-weight:700;padding:8px 12px;width:100px;font-family:inherit;outline:none;" oninput="calcCommission()">
+        <span style="color:#556644;font-size:12px;">per Quintal (100 kg)</span>
+      </div>
+    </div>
+    <div style="background:#111f0e;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1px solid #1a2e10;">
+      <div style="background:#1a3a10;padding:10px 14px;font-size:13px;font-weight:700;color:#7ddd44;">Stock Summary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#1a2e10;">
+        <div style="background:#0d150a;padding:10px;text-align:center;">
+          <div style="font-size:9px;color:#445533;text-transform:uppercase;margin-bottom:4px;">Dal</div>
+          <div style="font-size:16px;font-weight:700;color:#7ddd44;" id="c-dal-kg">0 kg</div>
+          <div style="font-size:10px;color:#445533;" id="c-dal-qtl">0.000 Qtl</div>
+        </div>
+        <div style="background:#0d150a;padding:10px;text-align:center;">
+          <div style="font-size:9px;color:#445533;text-transform:uppercase;margin-bottom:4px;">Salt</div>
+          <div style="font-size:16px;font-weight:700;color:#7ddd44;" id="c-salt-kg">0 kg</div>
+          <div style="font-size:10px;color:#445533;" id="c-salt-qtl">0.000 Qtl</div>
+        </div>
+        <div style="background:#0d150a;padding:10px;text-align:center;">
+          <div style="font-size:9px;color:#445533;text-transform:uppercase;margin-bottom:4px;">Sugar</div>
+          <div style="font-size:16px;font-weight:700;color:#7ddd44;" id="c-sugar-kg">0 kg</div>
+          <div style="font-size:10px;color:#445533;" id="c-sugar-qtl">0.000 Qtl</div>
+        </div>
+        <div style="background:#0d150a;padding:10px;text-align:center;">
+          <div style="font-size:9px;color:#445533;text-transform:uppercase;margin-bottom:4px;">Total</div>
+          <div style="font-size:16px;font-weight:700;color:#00e5ff;" id="c-total-kg">0 kg</div>
+          <div style="font-size:10px;color:#445533;" id="c-total-qtl">0.000 Qtl</div>
+        </div>
+      </div>
+    </div>
+    <div style="background:#0d2a18;border-radius:10px;padding:16px;text-align:center;margin-bottom:12px;border:1px solid #2a5a15;">
+      <div style="font-size:10px;color:#556644;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your Commission</div>
+      <div style="font-size:36px;font-weight:800;color:#7ddd44;" id="c-commission">Rs.0.00</div>
+      <div style="font-size:11px;color:#445533;margin-top:4px;" id="c-formula">0.000 Qtl x Rs.180 = Rs.0.00</div>
+    </div>
+    <div style="background:#111f0e;border-radius:10px;overflow:hidden;border:1px solid #1a2e10;">
+      <div style="background:#1a3a10;padding:10px 14px;font-size:13px;font-weight:700;color:#7ddd44;">Group Wise</div>
+      <div id="c-group-list"></div>
+    </div>
+  </div>
 </div>
 
 <!-- NUMPAD -->
@@ -644,6 +693,7 @@ function swTab(t){
   document.getElementById('page-'+t).classList.add('active');
   if(t==='summary')renderSummary();
   if(t==='history')renderHistory();
+  if(t==='commission')calcCommission();
 }
 
 // ─── TOAST ───
@@ -682,6 +732,56 @@ function loadDWCCS(){
   saveData();
   renderAll();
   showToast('✅ DWCCS March 2026 loaded!');
+}
+
+// ─── COMMISSION ───
+function calcCommission(){
+  var rate=parseFloat(document.getElementById('comm-rate').value)||180;
+  var totalDal=0,totalSalt=0,totalSugar=0;
+  GROUPS.forEach(function(g,gi){
+    g.members.forEach(function(m,ri){
+      totalDal+=getVal(gi,ri,'dal');
+      totalSalt+=getVal(gi,ri,'salt');
+      totalSugar+=getVal(gi,ri,'sugar');
+    });
+  });
+  var totalKg=totalDal+totalSalt+totalSugar;
+  var totalQtl=totalKg/100;
+  var commission=totalQtl*rate;
+
+  document.getElementById('c-dal-kg').textContent=totalDal+' kg';
+  document.getElementById('c-dal-qtl').textContent=(totalDal/100).toFixed(3)+' Qtl';
+  document.getElementById('c-salt-kg').textContent=totalSalt+' kg';
+  document.getElementById('c-salt-qtl').textContent=(totalSalt/100).toFixed(3)+' Qtl';
+  document.getElementById('c-sugar-kg').textContent=totalSugar+' kg';
+  document.getElementById('c-sugar-qtl').textContent=(totalSugar/100).toFixed(3)+' Qtl';
+  document.getElementById('c-total-kg').textContent=totalKg+' kg';
+  document.getElementById('c-total-qtl').textContent=totalQtl.toFixed(3)+' Qtl';
+  document.getElementById('c-commission').textContent='Rs.'+commission.toFixed(2);
+  document.getElementById('c-formula').textContent=totalQtl.toFixed(3)+' Qtl x Rs.'+rate.toFixed(2)+' = Rs.'+commission.toFixed(2);
+
+  // Group wise
+  var gl=document.getElementById('c-group-list');
+  var html='';
+  GROUPS.forEach(function(g,gi){
+    var gDal=0,gSalt=0,gSugar=0;
+    g.members.forEach(function(m,ri){
+      gDal+=getVal(gi,ri,'dal');
+      gSalt+=getVal(gi,ri,'salt');
+      gSugar+=getVal(gi,ri,'sugar');
+    });
+    var gKg=gDal+gSalt+gSugar;
+    var gQtl=gKg/100;
+    var gComm=gQtl*rate;
+    html+='<div style="padding:10px 14px;border-bottom:1px solid #1a2e10;display:flex;justify-content:space-between;align-items:center;">'+
+      '<div>'+
+        '<div style="font-size:13px;font-weight:700;color:#7ddd44;">'+g.name+'</div>'+
+        '<div style="font-size:10px;color:#445533;">'+gKg+' kg = '+gQtl.toFixed(3)+' Qtl</div>'+
+      '</div>'+
+      '<div style="font-size:16px;font-weight:700;color:#00e5ff;">Rs.'+gComm.toFixed(2)+'</div>'+
+    '</div>';
+  });
+  gl.innerHTML=html;
 }
 
 // ─── INIT ───
